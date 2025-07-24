@@ -15,7 +15,7 @@ module.exports = function (app) {
 
   //routes
   app.use("/", home);
-  app.use("/api", shorturl);
+  app.use("/api/shorturl", shorturl);
 
   //error
   app.use(error);

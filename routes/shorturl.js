@@ -7,7 +7,7 @@ router.get("/", async (req, res) => {
   return res.send("");
 });
 
-router.post("/shorturl", async (req, res) => {
+router.post("/", async (req, res) => {
   // Validate input field
   const { error, value } = validate({ original_url: req.body?.url });
 
@@ -42,6 +42,19 @@ router.post("/shorturl", async (req, res) => {
     original_url: newUrl.original_url,
     short_url: newUrl.short_url,
   });
+});
+
+router.get("/:id", async (req, res) => {
+  const id = req.params.id;
+
+  if (isNaN(id)) return res.json({ error: "Wrong format" });
+
+  const url = await Url.findOne({ short_url: id });
+
+  if (!url)
+    return res.json({ error: "No short URL found for the given input" });
+
+  return res.redirect(url.original_url);
 });
 
 module.exports = router;
