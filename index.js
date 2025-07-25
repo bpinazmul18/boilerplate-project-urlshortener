@@ -56,32 +56,17 @@ app.post("/api/shorturl", async (req, res) => {
   return res.json({ original_url: req.body.url, short_url: unique_id });
 });
 
-// app.get("/api/shorturl/:id", async (req, res) => {
-//   const short_url = Number(req.params.id);
-//   if (Number.isNaN(short_url)) return res.json({ error: "Wrong format" });
+app.get("/api/shorturl/:id", async (req, res) => {
+  const short_url = Number(req.params.id);
+  if (Number.isNaN(short_url)) return res.json({ error: "Wrong format" });
 
-//   const result = await shortURL.findOne({ short_url });
+  const result = await shortURL.findOne({ short_url });
 
-//   if (!result) {
-//     return res.json({ error: "not found" });
-//   }
-
-//   res.redirect(result.original_url);
-// });
-
-app.get("/api/shorturl/:shorturl", async (req, res) => {
-  const shortUrl = req.params.shorturl;
-  try {
-    const found = await shortURL.findOne({ short_url: shortUrl });
-    if (found) {
-      res.redirect(found.original_url);
-    } else {
-      res.json({ error: "invalid url" });
-    }
-  } catch (error) {
-    console.error("Error finding document:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+  if (!result) {
+    return res.json({ error: "not found" });
   }
+
+  res.redirect(result.original_url);
 });
 
 mongoose
