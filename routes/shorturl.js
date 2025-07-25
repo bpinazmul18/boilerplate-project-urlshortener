@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { Url, validate } = require("../models/shorturl");
-const winston = require("winston/lib/winston/config");
+const winston = require("winston");
 
 router.get("/", async (req, res) => {
   return res.send("");
@@ -46,6 +46,7 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
+  console.log("me");
   const shortUrl = req.params.id;
 
   try {
