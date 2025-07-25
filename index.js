@@ -1,76 +1,92 @@
 require("dotenv").config();
-const winston = require("winston");
 const express = require("express");
+const mongoose = require("mongoose");
+const { nanoid } = require("nanoid");
+const dns = require("node:dns");
+const bodyParser = require("body-parser");
 const cors = require("cors");
+
 const app = express();
+const port = process.env.PORT || 3000;
 
-const { Url, validate } = require("./models/shorturl");
-
-require("./startup/logging")(app);
-// require("./startup/routes")(app);
-require("./startup/db")();
-
-// Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.use("/public", express.static(`${process.cwd()}/public`));
 
-app.get("/", function (req, res) {
+const shortURLSchema = new mongoose.Schema({
+  original_url: String,
+  short_url: String,
+});
+
+const shortURL = mongoose.model("URL", shortURLSchema);
+
+app.get("/", (req, res) => {
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
-app.post("/api/shorturl", async (req, res) => {
-  // Validate input field
-  const { error, value } = validate({ original_url: req.body?.url });
-
-  if (error) return res.json({ error: "invalid url" });
-
-  // Find by url and return
-  // const url = await Url.findOne({ original_url: value.original_url });
-
-  // if (url) {
-  //   return res.json({
-  //     original_url: url.original_url,
-  //     short_url: url.short_url,
-  //   });
-  // }
-
-  const count = await Url.countDocuments({});
-
-  // New url
-  const newUrl = new Url({
-    original_url: value.original_url,
-    short_url: count + 1,
-  });
-
-  const _newUrl = await newUrl.save();
-
-  return res.json({
-    original_url: _newUrl.original_url,
-    short_url: _newUrl.short_url,
-  });
-});
-
-app.get("/api/shorturl/:short_url", async (req, res) => {
-  const short_url = parseInt(req.params.short_url);
-
-  try {
-    const url = await Url.findOne({ short_url });
-
-    if (url) {
-      return res.redirect(url.original_url);
+app.use("/api/shorturl", async (req, res, next) => {
+  if (req.method === "POST") {
+    if (!req.body.url || req.body.url === null) {
+      return res.status(400).send("Bad Request");
     }
 
-    res.json({ error: "No short URL found" });
-  } catch (err) {
-    winston.error("Error retrieving URL:", err);
-    return res.status(500).json({ error: "Error retrieving URL" });
+    const url = new URL(req.body.url);
+
+    dns.lookup(url.hostname, { family: 4 }, (err, address) => {
+      console.log(err);
+      console.log(address);
+      if (err) return res.json({ error: "invalid url" });
+      else next();
+    });
+  } else {
+    next();
   }
 });
 
-const port = process.env.PORT || 3000;
+app.post("/api/shorturl", async (req, res) => {
+  const unique_id = nanoid(5);
+  const url = new shortURL({
+    unique_id,
+    original_url: req.body.url,
+    short_url: unique_id,
+  });
 
-app.listen(port, function () {
-  winston.info(`Listening on port ${port}`);
+  url.save();
+  return res.json({ original_url: req.body.url, short_url: unique_id });
 });
+
+// app.get("/api/shorturl/:id", async (req, res) => {
+//   const short_url = Number(req.params.id);
+//   if (Number.isNaN(short_url)) return res.json({ error: "Wrong format" });
+
+//   const result = await shortURL.findOne({ short_url });
+
+//   if (!result) {
+//     return res.json({ error: "not found" });
+//   }
+
+//   res.redirect(result.original_url);
+// });
+
+app.get("/api/shorturl/:shorturl", async (req, res) => {
+  const shortUrl = req.params.shorturl;
+  try {
+    const found = await shortURL.findOne({ short_url: shortUrl });
+    if (found) {
+      res.redirect(found.original_url);
+    } else {
+      res.json({ error: "invalid url" });
+    }
+  } catch (error) {
+    console.error("Error finding document:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+mongoose
+  .connect(process.env.dbURI)
+  .then(() => console.log("MongoDB connection successful!"))
+  .catch((err) => console.log(`MongoDB connection failed! ${err}`));
+
+app.listen(port, () => console.log(`Listening on port ${port}`));
