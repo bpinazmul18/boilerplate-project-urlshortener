@@ -4,10 +4,6 @@ const router = express.Router();
 const { Url, validate } = require("../models/shorturl");
 const winston = require("winston");
 
-router.get("/", async (req, res) => {
-  return res.send("");
-});
-
 router.post("/", async (req, res) => {
   // Validate input field
   const { error, value } = validate({ original_url: req.body?.url });
