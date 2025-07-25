@@ -53,16 +53,16 @@ app.post("/api/shorturl", async (req, res) => {
 });
 
 app.get("/api/shorturl/:short_url", async (req, res) => {
-  const short_url = req.params.short_url;
+  const short_url = parseInt(req.params.short_url);
 
   try {
     const url = await Url.findOne({ short_url });
 
-    if (!url) {
-      return res.status(404).json({ error: "URL was not found" });
+    if (url) {
+      return res.redirect(url.original_url);
     }
 
-    return res.redirect(url.original_url);
+    res.json({ error: "No short URL found" });
   } catch (err) {
     winston.error("Error retrieving URL:", err);
     return res.status(500).json({ error: "Error retrieving URL" });
