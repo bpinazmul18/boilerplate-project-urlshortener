@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const { Url, validate } = require("../models/shorturl");
+const winston = require("winston/lib/winston/config");
 
 router.get("/", async (req, res) => {
   return res.send("");
@@ -45,16 +46,20 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const id = req.params.id;
+  const shortUrl = req.params.id;
 
-  if (isNaN(id)) return res.json({ error: "Wrong format" });
+  try {
+    const url = await Url.findOne({ short_url: shortUrl });
 
-  const url = await Url.findOne({ short_url: id });
+    if (!url) {
+      return res.status(404).json({ error: "URL was not found" });
+    }
 
-  if (!url)
-    return res.json({ error: "No short URL found for the given input" });
-
-  return res.redirect(url.original_url);
+    return res.redirect(url.original_url);
+  } catch (err) {
+    winston.error("Error retrieving URL:", err);
+    return res.status(500).json({ error: "Error retrieving URL" });
+  }
 });
 
 module.exports = router;
