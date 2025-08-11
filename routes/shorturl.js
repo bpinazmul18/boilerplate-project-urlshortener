@@ -59,6 +59,24 @@ router.post("/shorturl", function (req, res) {
       return res.status(500).json({ error: "Server error" });
     }
   });
+
+  router.get("/shorturl/:id", async (req, res) => {
+    const shortUrlId = req.params.id;
+
+    try {
+      const urlDoc = await Url.findOne({ short_url: shortUrlId });
+      if (!urlDoc) {
+        return res
+          .status(404)
+          .json({ error: "No short URL found for given input" });
+      }
+
+      return res.redirect(urlDoc.original_url);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Server error" });
+    }
+  });
 });
 
 module.exports = router;
