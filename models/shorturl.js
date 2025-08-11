@@ -5,9 +5,12 @@ const Url = new mongoose.model(
   new mongoose.Schema({
     original_url: {
       type: String,
+      required: true,
     },
     short_url: {
       type: Number,
+      required: true,
+      unique: true,
     },
     createdAt: {
       type: Date,
